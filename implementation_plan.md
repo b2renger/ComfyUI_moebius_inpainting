@@ -66,7 +66,8 @@ README.md / CLAUDE.md / implementation_plan.md / LICENSE / NOTICE
 - [x] Phase 4 — `nodes.py` + `__init__.py` + packaging; node defs verified under ComfyUI's module loader (gotcha found+fixed: hf's `.cache/` bookkeeping leaked into the model dropdown)
 - [x] Phase 5 — example workflow JSON + `test_moebius.py`
 - [x] Phase 6 — smoke tests on rig (RTX 5090): pipeline PASS (strict weight load, 0.73 s/20 steps warm, bit-identical reruns) + headless node-class PASS (conversions, full-res paste 100% identical >10 px from mask, empty-mask passthrough). **Mask polarity confirmed: white/1.0 = inpaint, no inversion.**
-- [ ] Phase 7 — in-ComfyUI graph test (owner) → publish
+- [x] Phase 7a — first in-ComfyUI run (owner) surfaced a **non-square crash** (`EinopsError`: lambda attention is square-only). Fixed by processing at a square `image_size` (upstream behavior) + node resizes back; verified on the rig across 6 aspect ratios + a real 512×384 crop; non-square regression added to `test_moebius.py`.
+- [ ] Phase 7b — in-ComfyUI test of the combined + standalone FLUX graphs (owner) → publish
 
 ## Verification
 

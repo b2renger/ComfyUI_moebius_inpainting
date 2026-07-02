@@ -126,11 +126,11 @@ def main():
     else:
         print("ok: same-seed rerun bit-identical")
 
-    # the pipeline output is at processed resolution; compare against the
-    # equally-resized input + binarized mask
-    from moebius_src.pipeline import resize_image_to_multiple_of_64
-    ref_img, ref_mask = resize_image_to_multiple_of_64([image, mask], 512)
-    ref = np.asarray(ref_img.convert("RGB")).astype(np.int16)
+    # the pipeline processes at a SQUARE resolution (image_size x image_size),
+    # so compare against the input squared the same way
+    ref_img = image.convert("RGB").resize((512, 512), Image.Resampling.LANCZOS)
+    ref_mask = mask.resize((512, 512), Image.Resampling.NEAREST)
+    ref = np.asarray(ref_img).astype(np.int16)
     m = np.asarray(ref_mask.point(lambda x: 0 if x < 128 else 255).convert("L")) >= 128
     if m.sum() == 0:
         print("FAIL: sample mask is empty")
@@ -150,6 +150,18 @@ def main():
         if untouched < 0.99:
             print("FAIL: paste-back should keep unmasked pixels identical")
             ok = False
+
+    # --- non-square regression (the lambda attention is square-only; the
+    #     pipeline must square the input internally or it raises EinopsError) ---
+    ns_img = image.convert("RGB").resize((640, 512), Image.Resampling.LANCZOS)  # 5:4 landscape
+    ns_mask = mask.resize((640, 512), Image.Resampling.NEAREST)
+    try:
+        ns_out = pipe([ns_img], [ns_mask], image_size=512, num_steps=4,
+                      guidance_scale=args.cfg, seed=args.seed, paste=True)[0]
+        print(f"ok: non-square 640x512 input ran -> {ns_out.size}")
+    except Exception as e:
+        print(f"FAIL: non-square input raised {type(e).__name__}: {str(e).splitlines()[0]}")
+        ok = False
 
     print("PASS" if ok else "FAIL", f"- outputs in {out_dir}")
     sys.exit(0 if ok else 1)

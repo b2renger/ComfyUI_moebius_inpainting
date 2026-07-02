@@ -118,7 +118,7 @@ Two **standalone FLUX.2 graphs** are *alternatives* to Moebius (they contain **n
 
 - **steps** (default 20) — DDIM denoising steps.
 - **guidance** (default 2.5) — classifier-free guidance; upstream uses 2.0–2.5. Higher = stronger removal, but can hallucinate.
-- **image_size** (default 512) — processing resolution (short side; snapped to a multiple of 64). The model is trained at 512; the output is resized back and (with `paste`) blended into the original at full resolution.
+- **image_size** (default 512) — the **square** side (a multiple of 64) the model runs at. Moebius is trained at 512×512 and its attention only handles square latents, so the node resizes your image to `image_size × image_size` for processing, then resizes the result back to the original width×height. **Non-square images are supported** — they're squished to square internally and un-squished on output (this is exactly what upstream does), so the aspect ratio you put in is the aspect ratio you get back.
 - **mask_dilate** (default 0) — grow the mask by N pixels before inpainting; useful when the mask hugs the object too tightly.
 - **paste** (default on) — Gaussian-blend the inpainted region back into the *original-resolution* image, so unmasked pixels stay pixel-identical.
 - **seed** — reproducibility.
@@ -135,7 +135,8 @@ Progress log (kept up to date — see [implementation_plan.md](implementation_pl
 - [x] 2026-07-02 — Nodes (`MoebiusModelLoader`, `MoebiusInpaint`) + packaging; node defs verified under ComfyUI's module loader.
 - [x] 2026-07-02 — Example workflows (5 total): 2 Moebius-only (general removal + `ft_ffhq` face retouch), 1 combined `moebius_then_flux2_replace` (Moebius clean-plate → FLUX.2 fill), 2 standalone FLUX.2 alternatives (prompt / reference). All carry in-graph note panels; all pass link-consistency validation. README gained the how-it-works, checkpoint guide, capabilities, and remove/add/replace decision table.
 - [x] 2026-07-02 — Smoke tests green on RTX 5090 (Blackwell, torch 2.9.1+cu128): weights auto-download; checkpoint loads strict; 20-step 512×512 inpaint in **0.73 s** warm; same-seed rerun bit-identical; **mask polarity confirmed** (ComfyUI 1.0 = inpaint, no inversion); with `paste`, pixels >10 px from the mask are 100% bit-identical to the input; empty mask returns the input unchanged.
-- [ ] In-ComfyUI graph test — **pending a user test**: (a) the Moebius-only graphs (loader → inpaint → save); (b) the combined + standalone FLUX graphs (need the CropAndStitch pack + FLUX.2 models, all present on the AN-5090-2 rig).
+- [x] 2026-07-02 — **In-ComfyUI test surfaced a real bug** (non-square images → `EinopsError`, the lambda attention is square-only). Fixed: the pipeline now processes at a square `image_size` (upstream's own behavior) and the node resizes back to the original aspect. Verified on the rig across 512×512 / 640×512 / 512×640 / 768×512 / 896×512 / 500×700 and a real 512×384 crop (dims preserved, far-from-mask pixels 100% identical, deterministic); non-square regression added to `test_moebius.py`.
+- [ ] In-ComfyUI graph test of the **combined + standalone FLUX graphs** — **pending a user test** (need the CropAndStitch pack + FLUX.2 models, all present on the AN-5090-2 rig).
 
 ## License
 

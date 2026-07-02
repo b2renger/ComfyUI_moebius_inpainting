@@ -30,6 +30,12 @@ Copied from https://github.com/hustvl/Moebius @ `390735d867e6a7b337abad23af7f2e9
 - Node-level test PASS (headless, real `nodes.py` classes): loader dropdown, IMAGE/MASK conversion, node-side full-res paste (pixels >10 px from mask **100% bit-identical**, boundary blend ≤0.29 from the radius-3 Gaussian), empty-mask passthrough.
 - **★ hf gotcha**: `hf_hub_download(local_dir=...)` creates `.cache/huggingface/` bookkeeping inside `models/moebius/` which leaked into `folder_paths.get_filename_list` — `_model_choices()` in nodes.py filters dot-dirs + non-checkpoint extensions. Keep that filter.
 
+## ★ Square-only model (non-square bug, fixed 2026-07-02)
+
+Moebius' lambda attention wrappers (`MQSλ_FwdWrapper`/`MQXλ_FwdWrapper` in `vanilla_lambda.py`) reshape the token sequence as a **square** grid: `h = w = int(x.shape[1] ** 0.5)`. So the model ONLY supports square latents; a non-square image raises `einops.EinopsError` (e.g. seq 5120 = 80x64 -> int(sqrt)=71, 71*71=5041 != 5120) deep in the first down block. Upstream never hits this because its inference *dataset* (`SimpleInferDataset`) force-resizes every image to `image_size x image_size` before the pipeline. Our first cut used an aspect-preserving resize (`resize_image_to_multiple_of_64`, now deleted), which produced non-square latents and crashed on any non-square input - the square 512x512 smoke test masked it.
+
+**Fix**: `MoebiusPipeline._preprocess` resizes the image (LANCZOS) + mask (NEAREST) to a square `side = (image_size//64)*64` before encoding; the node then resizes the result back to the original W×H (paste + far-pixel identity happen there at full res). This matches upstream exactly. Do NOT reintroduce aspect-preserving resize unless the lambda wrappers are also taught the real h,w (they get only `(b, seq, c)` from diffusers' attention path, so that's invasive - square processing is the right call). Non-square regression lives in `test_moebius.py` (640x512 must run).
+
 ## Parity notes (for comparing against upstream CLI)
 
 - Upstream CLI defaults: `--cfg 2.5`, `--pst true` (paste), `--cps false`, `--noise-offset 0.0357`, `--num-step 20`, fp32 pipeline (`dtype=torch.float`). Node defaults mirror these.

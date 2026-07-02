@@ -56,30 +56,6 @@ def get_timesteps(scheduler, num_inference_steps, strength, device):
     return timesteps, num_inference_steps - t_start
 
 
-def resize_image_to_multiple_of_64(imgs: Union[I.Image, List[I.Image]], image_size: int) -> List[I.Image]:
-    """
-    Resize input images so the short side equals image_size,
-    then round width/height to multiples of 64.
-    """
-    if isinstance(imgs, I.Image):
-        imgs = [imgs]
-    w, h = imgs[0].size
-
-    if w < h:
-        scale = image_size / w
-        w_t, h_t = image_size, int(h * scale)
-    else:
-        scale = image_size / h
-        w_t, h_t = int(w * scale), image_size
-
-    w_t, h_t = w_t // 64 * 64, h_t // 64 * 64
-
-    out = []
-    for img in imgs:
-        out.append(img.resize((w_t, h_t), I.Resampling.LANCZOS))
-    return out
-
-
 class MoebiusPipeline:
     """Upstream RemovalSDXLPipeline_BatchMode, trimmed to the inference path."""
 
@@ -139,7 +115,15 @@ class MoebiusPipeline:
                     mask_preprocess_type='dilate') -> List[Union[Tensor, SimpleNamespace]]:
         input_mask = input_mask.point(lambda x: 0 if x < 255 / 2 else 255, 'L')
 
-        input_image, input_mask = resize_image_to_multiple_of_64([input_image, input_mask], image_size)
+        # Moebius' lambda attention reshapes the token sequence as a SQUARE grid
+        # (h = w = sqrt(seq_len)), so the model only supports square latents.
+        # Upstream enforces this too - its inference dataset resizes every image
+        # to image_size x image_size before the pipeline. We match that: process
+        # at a square resolution (a multiple of 64) and let the caller resize the
+        # result back to the original aspect ratio.
+        side = max(64, (int(image_size) // 64) * 64)
+        input_image = input_image.convert("RGB").resize((side, side), I.Resampling.LANCZOS)
+        input_mask = input_mask.resize((side, side), I.Resampling.NEAREST)
 
         input_mask = self.mask_preprocess(
             input_mask, mask_dilate_kernel_size, kind=mask_preprocess_type)
