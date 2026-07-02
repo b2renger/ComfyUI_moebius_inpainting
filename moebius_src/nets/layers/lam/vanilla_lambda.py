@@ -110,7 +110,7 @@ class MultiQueryCrossLambda(nn.Module):
             assert _exists(n), 'You must specify the window size (n=h=w)'
             assert _exists(m), 'You must specify the hidden_state length for xattn (m=len_k)'
             self.rel_pos_emb = nn.Parameter(torch.randn(n*n, m, dim_k, dim_u))
-            self.rel_pos = torch.stack(torch.meshgrid(torch.arange(n*n), torch.arange(m)), dim=-1)  # self.rel_pos = calc_rel_pos(n)
+            self.rel_pos = torch.stack(torch.meshgrid(torch.arange(n*n), torch.arange(m), indexing='ij'), dim=-1)  # self.rel_pos = calc_rel_pos(n)
 
     def forward(self, x, hidden_states):
         x = _rearrange(x, 'b h w c -> b c h w')

@@ -163,7 +163,7 @@ class UNet2DLambdaDWConvMixFFNConditionModel_prune_down_mid_up_block_8x8(UNet2DC
         ## inject lambda into TD 2D Model
         cur_hw_size = self.sample_size
         for i, cur_block in enumerate(self.down_blocks):
-            print(f"{type(cur_block)}")
+            pass  # NOTE(vendored): upstream debug print removed
             if isinstance(cur_block, DWMixTFDownBlock2D):
                 for j, tfmodel in enumerate(cur_block.attentions):
                     self.inject_lambda_into_tf2dmodel(

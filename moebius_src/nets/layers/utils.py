@@ -18,7 +18,7 @@ to_3tuple = _triple
 to_4tuple = _quadruple
 
 def calc_rel_pos(n):
-    pos = torch.meshgrid(torch.arange(n), torch.arange(n))
+    pos = torch.meshgrid(torch.arange(n), torch.arange(n), indexing='ij')
     pos = _rearrange(torch.stack(pos), 'n i j -> (i j) n')
     rel_pos = pos[None, :] - pos[:, None]
     rel_pos += n - 1

@@ -106,7 +106,7 @@ class MixTransformer2DModel(Transformer2DModel):
 
 
     def _init_continuous_input(self, norm_type):
-        print("_init_continuous_input")
+        pass  # NOTE(vendored): upstream debug print removed
         self.norm = torch.nn.GroupNorm(
             num_groups=self.config.norm_num_groups, num_channels=self.in_channels, eps=1e-6, affine=True
         )
