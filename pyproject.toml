@@ -1,0 +1,23 @@
+[project]
+name = "comfyui_moebius_inpainting"
+version = "0.1.0"
+description = "ComfyUI nodes for Moebius (hustvl) - 0.22B mask-driven inpainting / object removal, 10B-level quality, no text encoder, pure PyTorch (Blackwell/Ada ready)."
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+dependencies = [
+    "diffusers>=0.32",
+    "einops",
+    "timm",
+    "opencv-python",
+    "pyyaml",
+    "huggingface_hub",
+    "numpy",
+    "Pillow",
+]
+
+[project.urls]
+Repository = "https://github.com/b2renger/ComfyUI_moebius_inpainting"
+
+[tool.comfy]
+PublisherId = "b2renger"
+DisplayName = "Moebius Inpainting"

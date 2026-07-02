@@ -1,0 +1,13 @@
+# Curated for inference only. Most of these ship with ComfyUI already.
+# IMPORTANT: torch/torchvision are deliberately NOT listed - ComfyUI owns the
+# torch build (upstream Moebius pins torch==2.7.1+cu130, which would break
+# users' installs). No flash-linear-attention either: it belongs to the
+# distillation teacher, not the student model shipped here.
+diffusers>=0.32
+einops
+timm
+opencv-python
+pyyaml
+huggingface_hub
+numpy
+Pillow
