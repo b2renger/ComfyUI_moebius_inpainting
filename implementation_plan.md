@@ -61,7 +61,7 @@ README.md / CLAUDE.md / implementation_plan.md / LICENSE / NOTICE
 
 - [x] Phase 0 — source audit (findings above)
 - [x] Phase 1 — repo scaffold + docs (this commit)
-- [ ] Phase 2 — vendor `moebius_src/` (import fixes, λ→lam rename, dynamo-side-effect strip, pipeline adaptation w/ step callback + seed param)
+- [x] Phase 2 — vendor `moebius_src/` (import fixes, λ→lam rename, dynamo-side-effect strip, pipeline adaptation w/ step callback + seed param) — import + random-init build verified on the rig's embedded python (226.0M params, diffusers 0.35.1)
 - [ ] Phase 3 — `download.py` + `conversions.py`
 - [ ] Phase 4 — `nodes.py` + `__init__.py` + packaging (`requirements.txt`, `pyproject.toml`)
 - [ ] Phase 5 — example workflow JSON + `test_moebius.py`

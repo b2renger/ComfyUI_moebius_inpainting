@@ -69,7 +69,7 @@ Progress log (kept up to date — see [implementation_plan.md](implementation_pl
 
 - [x] 2026-07-02 — Upstream source audited: student UNet confirmed pure PyTorch (no `fla` dependency); inference path mapped (`RemovalSDXLPipeline_BatchMode`); HF weight layouts verified.
 - [x] 2026-07-02 — Repo scaffold + docs.
-- [ ] Vendor minimal inference subset under `moebius_src/` (Apache-2.0, see NOTICE).
+- [x] 2026-07-02 — Vendored minimal inference subset under `moebius_src/` (Apache-2.0, see NOTICE); imports + model construction verified against diffusers 0.35.1 (226.0M params).
 - [ ] `download.py` (HF fetch) + `conversions.py` (IMAGE/MASK ↔ PIL glue).
 - [ ] Nodes (`MoebiusModelLoader`, `MoebiusInpaint`) + packaging.
 - [ ] Example workflow JSON.
