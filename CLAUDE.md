@@ -1,6 +1,6 @@
 # ComfyUI_moebius_inpainting — project memory
 
-ComfyUI custom-node package wrapping the **Moebius** 0.22B inpainting model (https://github.com/hustvl/Moebius). Lives in its own git repo inside `ComfyUI/custom_nodes/` (dev-in-place on the AN-5090-2 rig; standalone on GitHub). Plan + dev log: [implementation_plan.md](implementation_plan.md); user-facing docs: [README.md](README.md). **Keep all three updated as development progresses.**
+ComfyUI custom-node package wrapping the **Moebius** 0.22B inpainting model (https://github.com/hustvl/Moebius). Canonical working copy: `D:\Code\ComfyUI_moebius_inpainting` (pushed to github.com/b2renger/ComfyUI_moebius_inpainting); on the AN-5090-2 rig a **junction** at `ComfyUI/custom_nodes/ComfyUI_moebius_inpainting` points here so ComfyUI loads it in place. Plan + dev log: [implementation_plan.md](implementation_plan.md); user-facing docs: [README.md](README.md). **Keep all three updated as development progresses.**
 
 ## Architecture decisions (the "why")
 
