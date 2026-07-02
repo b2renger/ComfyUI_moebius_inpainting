@@ -1,0 +1,98 @@
+{
+  "last_node_id": 6,
+  "last_link_id": 4,
+  "nodes": [
+    {
+      "id": 5,
+      "type": "Note",
+      "pos": [60, -220],
+      "size": [880, 210],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": ["MOEBIUS FACE INPAINT - portrait / face retouching\n\nSame pipeline as the general example, but with the ft_ffhq checkpoint: Moebius fine-tuned on FFHQ, a large dataset of diverse face close-ups. It reconstructs facial skin, hair and features far better than the general model. Typical uses: remove glasses, a hand in front of the face, tattoos, blemishes, watermarks over a portrait, or repair occluded face regions.\n\nTips for faces:\n- ft_ffhq for close-ups / selfies; ft_celebahq for studio-style portraits; if the face is small inside a larger scene, the general 'pretrained' often works better.\n- mask_dilate 4 is preset here: face edits usually benefit from a slightly grown mask so no rim of the removed object survives.\n- The model regenerates ONLY the masked area (paste ON) - identity outside the mask is untouched. The larger the masked face area, the more the reconstructed identity may drift: mask tightly.\n- Still no text prompt: you choose WHERE, the model decides WHAT fits there."],
+      "color": "#432",
+      "bgcolor": "#653",
+      "title": "About this workflow"
+    },
+    {
+      "id": 2,
+      "type": "MoebiusModelLoader",
+      "pos": [80, 60],
+      "size": [340, 106],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {"name": "pipe", "type": "MOEBIUS_PIPE", "links": [3], "slot_index": 0}
+      ],
+      "properties": {"Node name for S&R": "MoebiusModelLoader"},
+      "widgets_values": ["(download) ft_ffhq", "fp32"]
+    },
+    {
+      "id": 1,
+      "type": "LoadImage",
+      "pos": [80, 240],
+      "size": [340, 314],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "links": [1], "slot_index": 0},
+        {"name": "MASK", "type": "MASK", "links": [2], "slot_index": 1}
+      ],
+      "properties": {"Node name for S&R": "LoadImage"},
+      "widgets_values": ["portrait.png", "image"],
+      "title": "Load a portrait → right-click → Open in MaskEditor"
+    },
+    {
+      "id": 3,
+      "type": "MoebiusInpaint",
+      "pos": [520, 150],
+      "size": [360, 330],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {"name": "pipe", "type": "MOEBIUS_PIPE", "link": 3},
+        {"name": "image", "type": "IMAGE", "link": 1},
+        {"name": "mask", "type": "MASK", "link": 2}
+      ],
+      "outputs": [
+        {"name": "image", "type": "IMAGE", "links": [4], "slot_index": 0}
+      ],
+      "properties": {"Node name for S&R": "MoebiusInpaint"},
+      "widgets_values": [20, 2.5, 0, "fixed", 512, 4, true, false, 0.0357]
+    },
+    {
+      "id": 4,
+      "type": "SaveImage",
+      "pos": [960, 150],
+      "size": [360, 400],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {"name": "images", "type": "IMAGE", "link": 4}
+      ],
+      "outputs": [],
+      "properties": {"Node name for S&R": "SaveImage"},
+      "widgets_values": ["moebius_face"]
+    }
+  ],
+  "links": [
+    [1, 1, 0, 3, 1, "IMAGE"],
+    [2, 1, 1, 3, 2, "MASK"],
+    [3, 2, 0, 3, 0, "MOEBIUS_PIPE"],
+    [4, 3, 0, 4, 0, "IMAGE"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {},
+  "version": 0.4
+}

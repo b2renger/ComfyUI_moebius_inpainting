@@ -1,6 +1,6 @@
 # ComfyUI_moebius_inpainting — project memory
 
-ComfyUI custom-node package wrapping the **Moebius** 0.22B inpainting model (https://github.com/hustvl/Moebius). Canonical working copy: `D:\Code\ComfyUI_moebius_inpainting` (pushed to github.com/b2renger/ComfyUI_moebius_inpainting); on the AN-5090-2 rig a **junction** at `ComfyUI/custom_nodes/ComfyUI_moebius_inpainting` points here so ComfyUI loads it in place. Plan + dev log: [implementation_plan.md](implementation_plan.md); user-facing docs: [README.md](README.md). **Keep all three updated as development progresses.**
+ComfyUI custom-node package wrapping the **Moebius** 0.22B inpainting model (https://github.com/hustvl/Moebius). Canonical working copy: `D:\Code\ComfyUI_moebius_inpainting` (pushed to github.com/b2renger/ComfyUI_moebius_inpainting); the rig's `ComfyUI/custom_nodes/ComfyUI_moebius_inpainting` is a **plain clone of the GitHub repo** (production-test copy): dev + commit + push happen on D:, then `git pull` (or ComfyUI-Manager 'Update') on the J: clone. Don't edit the J: copy. Plan + dev log: [implementation_plan.md](implementation_plan.md); user-facing docs: [README.md](README.md). **Keep all three updated as development progresses.**
 
 ## Architecture decisions (the "why")
 
@@ -40,7 +40,7 @@ Copied from https://github.com/hustvl/Moebius @ `390735d867e6a7b337abad23af7f2e9
 ## Environment / test rig
 
 - Rig: AN-5090-2, RTX 5090 (Blackwell), Windows. ComfyUI portable at `J:\ComfyUI_windows_portable_nvidia\ComfyUI_windows_portable\` — embedded python `python_embeded\python.exe` (3.12.10, torch 2.9.1+cu128, diffusers 0.35.1, einops/timm/cv2/omegaconf/huggingface_hub all present → `pip install -r requirements.txt` is a no-op here).
-- Standalone smoke test: `python_embeded\python.exe custom_nodes\ComfyUI_moebius_inpainting\test_moebius.py` (auto-downloads weights on first run; writes PNGs into the repo's `_test_out/`, gitignored). Run it after any change to `moebius_src/` or the pipeline glue.
+- Standalone smoke test: `python_embeded\python.exe custom_nodes\ComfyUI_moebius_inpainting\test_moebius.py` (auto-downloads weights on first run; writes PNGs into the repo's `_test_out/`, gitignored). Run it after any change to `moebius_src/` or the pipeline glue. Remember the J: copy tests what's PUSHED - push from D: and pull on J: first.
 - diffusers compatibility: vendored code imports `diffusers.models.unets.unet_2d_condition`, `.unet_2d_blocks (get_down_block/get_mid_block/get_up_block)`, `transformer_2d`, `AdaGroupNorm`, etc. Verified against diffusers **0.35.1**; upstream targeted 0.38. If a future diffusers moves these, pin `<` the breaking version in requirements.txt.
 
 ## Conventions

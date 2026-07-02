@@ -4,6 +4,16 @@ ComfyUI custom nodes for **[Moebius](https://github.com/hustvl/Moebius)** (hustv
 
 Moebius is **mask-driven object removal / inpainting**. There is **no text prompt** — conditioning comes from a fixed learned embedding table inside the model. You give it an image and a mask; it fills the masked region.
 
+## What Moebius can and can't do
+
+**Can:** remove anything you mask — objects, people, text/watermarks, blemishes, occlusions — and refill the hole with a plausible continuation of the surroundings, in well under a second. That single skill is the whole model, which is why 0.22B matches 10B-class generalists at it.
+
+**Can't, by architecture (not by our wrapper):**
+- **Prompt-guided inpainting** ("replace the car with a fountain") — Moebius has no text encoder at all; there is nothing to feed a prompt into.
+- **Reference-guided inpainting** (insert the object/style from a second image) — the UNet has no image-conditioning input besides the masked source itself.
+
+For those two jobs use a *generalist fill/edit model* (e.g. FLUX.1-Fill or a FLUX.2 Klein inpaint graph) — bigger and slower, but promptable. A good pattern is to combine them: Moebius for fast, seamless *removal*, the big model only when you need to *put something specific* in the hole.
+
 ## Nodes
 
 | Node | What it does |
@@ -40,6 +50,19 @@ ComfyUI/models/moebius/
 
 Sources: [hustvl/Moebius](https://huggingface.co/hustvl/Moebius) (UNet checkpoints, ~900 MB each, MIT) and [hustvl/PixelHacker](https://huggingface.co/hustvl/PixelHacker) (`vae/`, ~335 MB). The VAE is shared by all checkpoints and auto-downloaded alongside any `(download)` selection.
 
+### Which checkpoint?
+
+All four are the **same architecture** trained/fine-tuned on different data — pick by content:
+
+| Checkpoint | Fine-tuned on | Reach for it when |
+|---|---|---|
+| `pretrained` | large general corpus | **default** — everyday photos, arbitrary objects |
+| `ft_places2` | Places2 (scenes, buildings, landscapes) | removing things from scenery, streets, interiors, backgrounds |
+| `ft_celebahq` | CelebA-HQ (studio-style portraits) | portrait shots, head-and-shoulders framing |
+| `ft_ffhq` | FFHQ (diverse face close-ups) | face close-ups — glasses, hands-in-front-of-face, occlusion repair |
+
+If the face is small inside a bigger scene, `pretrained`/`ft_places2` usually beat the face models — the face checkpoints shine when the face fills the frame.
+
 ## GPU support (Blackwell / Ada / older)
 
 The Moebius *student* model is **pure PyTorch** — no custom CUDA kernels, no flash-attention, no compiled wheels of its own. (The upstream repo's `flash-linear-attention` requirement belongs to the PixelHacker *teacher* used for distillation training; it is not part of inference and is not shipped here.)
@@ -49,9 +72,12 @@ GPU support is therefore exactly your torch build's support:
 - **Blackwell (RTX 50xx, sm_120)** and **Ada (RTX 40xx, sm_89)**: works with the torch **≥ 2.7 + cu128** builds that current ComfyUI portable packages ship (verified: torch 2.9.1+cu128 arch list includes sm_120).
 - Older NVIDIA cards, CPU, and Apple Silicon (`mps`): also work — pure PyTorch, fp32 by default.
 
-## Example workflow
+## Example workflows
 
-Drag [`example_workflows/moebius_inpaint_example.json`](example_workflows/moebius_inpaint_example.json) onto the ComfyUI canvas: `LoadImage` (draw the mask in the mask editor) → `Moebius Model Loader` → `Moebius Inpaint` → `SaveImage`.
+Drag a JSON from [`example_workflows/`](example_workflows/) onto the ComfyUI canvas. Both graphs carry note panels explaining the pipeline, the checkpoints and every parameter:
+
+- [`moebius_inpaint_example.json`](example_workflows/moebius_inpaint_example.json) — **general object removal** (`pretrained`): `LoadImage` (paint the mask in the MaskEditor) → `Moebius Model Loader` → `Moebius Inpaint` → `SaveImage`.
+- [`moebius_face_inpaint_example.json`](example_workflows/moebius_face_inpaint_example.json) — **face / portrait retouching** (`ft_ffhq`, mask_dilate 4): remove glasses, hands, occlusions from face close-ups.
 
 ## Parameter guide
 
@@ -72,7 +98,7 @@ Progress log (kept up to date — see [implementation_plan.md](implementation_pl
 - [x] 2026-07-02 — Vendored minimal inference subset under `moebius_src/` (Apache-2.0, see NOTICE); imports + model construction verified against diffusers 0.35.1 (226.0M params).
 - [x] 2026-07-02 — `download.py` (HF fetch, both checkpoints + shared VAE) + `conversions.py` (IMAGE/MASK ↔ PIL glue).
 - [x] 2026-07-02 — Nodes (`MoebiusModelLoader`, `MoebiusInpaint`) + packaging; node defs verified under ComfyUI's module loader.
-- [x] 2026-07-02 — Example workflow JSON.
+- [x] 2026-07-02 — Example workflow JSON; later expanded to two annotated examples (general removal + `ft_ffhq` face retouch) with in-graph note panels, plus the checkpoint guide and capabilities section in this README.
 - [x] 2026-07-02 — Smoke tests green on RTX 5090 (Blackwell, torch 2.9.1+cu128): weights auto-download; checkpoint loads strict; 20-step 512×512 inpaint in **0.73 s** warm; same-seed rerun bit-identical; **mask polarity confirmed** (ComfyUI 1.0 = inpaint, no inversion); with `paste`, pixels >10 px from the mask are 100% bit-identical to the input; empty mask returns the input unchanged.
 - [ ] In-ComfyUI graph test (loader → inpaint → save) — **pending a user test**: restart ComfyUI, drag in the example workflow, paint a mask, Queue.
 

@@ -1,14 +1,46 @@
 {
-  "last_node_id": 4,
+  "last_node_id": 7,
   "last_link_id": 4,
   "nodes": [
+    {
+      "id": 5,
+      "type": "Note",
+      "pos": [60, -270],
+      "size": [880, 260],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": ["MOEBIUS INPAINT - object removal (image + mask, NO text prompt)\n\nHow to use:\n1) Pick an image in Load Image, then right-click it -> 'Open in MaskEditor' and paint over what you want to REMOVE. Save the mask.\n2) Queue. White (painted) mask areas are erased and refilled from the surrounding context.\n\nWhy is there no prompt? Moebius is a 0.22B removal SPECIALIST distilled from a 10B-class teacher. It has no text encoder at all - conditioning comes from a small learned embedding table baked into the checkpoint. You cannot describe what to put in the hole: it always synthesizes a plausible continuation of the background. That focus is what makes it this small and this fast (~0.7 s for 20 steps at 512px on an RTX 5090).\n\nIf you need 'replace X with Y' (prompt-driven) or reference-image-guided inpainting, that is a different kind of model (e.g. a FLUX fill/edit pipeline) - see the README."],
+      "color": "#432",
+      "bgcolor": "#653",
+      "title": "About this workflow"
+    },
+    {
+      "id": 6,
+      "type": "Note",
+      "pos": [60, 620],
+      "size": [880, 210],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": ["CHECKPOINTS (loader dropdown; each ~900 MB, auto-downloaded on first use, all share one VAE):\n- pretrained    : general-purpose. Use this for most photos and objects.\n- ft_places2    : fine-tuned on Places2 (scenes, buildings, landscapes). Best when removing things from scenery/backgrounds.\n- ft_celebahq   : fine-tuned on CelebA-HQ portraits. Best for faces shot portrait-style.\n- ft_ffhq       : fine-tuned on FFHQ (diverse faces). Best for face close-ups - removing glasses, hands, occlusions. See the face example workflow.\n\nPARAMETERS: steps 20 + guidance 2.5 are the paper defaults (higher guidance = stronger removal, can hallucinate). image_size 512 is the internal processing resolution - the model was trained at 512 and the output is always returned at YOUR input resolution. mask_dilate grows the mask by N pixels if object edges survive. paste ON guarantees unmasked pixels stay bit-identical to the input."],
+      "color": "#432",
+      "bgcolor": "#653",
+      "title": "Checkpoints & parameters"
+    },
     {
       "id": 2,
       "type": "MoebiusModelLoader",
       "pos": [80, 60],
       "size": [340, 106],
       "flags": {},
-      "order": 0,
+      "order": 2,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -23,7 +55,7 @@
       "pos": [80, 240],
       "size": [340, 314],
       "flags": {},
-      "order": 1,
+      "order": 3,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -32,7 +64,7 @@
       ],
       "properties": {"Node name for S&R": "LoadImage"},
       "widgets_values": ["example.png", "image"],
-      "title": "Load Image (right-click → Open in MaskEditor to paint the removal mask)"
+      "title": "Load Image → right-click → Open in MaskEditor"
     },
     {
       "id": 3,
@@ -40,7 +72,7 @@
       "pos": [520, 150],
       "size": [360, 330],
       "flags": {},
-      "order": 2,
+      "order": 4,
       "mode": 0,
       "inputs": [
         {"name": "pipe", "type": "MOEBIUS_PIPE", "link": 3},
@@ -59,7 +91,7 @@
       "pos": [960, 150],
       "size": [360, 400],
       "flags": {},
-      "order": 3,
+      "order": 5,
       "mode": 0,
       "inputs": [
         {"name": "images", "type": "IMAGE", "link": 4}
