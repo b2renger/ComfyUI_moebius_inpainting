@@ -93,10 +93,17 @@ Drag a JSON from [`example_workflows/`](example_workflows/) onto the ComfyUI can
 - [`moebius_inpaint_example.json`](example_workflows/moebius_inpaint_example.json) — **general object removal** (`pretrained`): `LoadImage` (paint the mask in the MaskEditor) → `Moebius Model Loader` → `Moebius Inpaint` → `SaveImage`.
 - [`moebius_face_inpaint_example.json`](example_workflows/moebius_face_inpaint_example.json) — **face / portrait retouching** (`ft_ffhq`, mask_dilate 4): remove glasses, hands, occlusions from face close-ups.
 
-Two **companion graphs** cover what Moebius architecturally can't (they use core ComfyUI nodes + FLUX.2 Klein 9B, not the Moebius nodes — models listed in each graph's note panel, plus the `comfyui-inpaint-cropandstitch` pack from the Manager):
+Two **companion graphs** cover what Moebius architecturally can't (they use core ComfyUI nodes + FLUX.2 Klein 9B, not the Moebius nodes):
 
 - [`flux2_klein_inpaint_prompt_example.json`](example_workflows/flux2_klein_inpaint_prompt_example.json) — **inpainting with a text prompt**: paint the mask, describe what should appear there.
 - [`flux2_klein_inpaint_reference_example.json`](example_workflows/flux2_klein_inpaint_reference_example.json) — **inpainting with a reference image**: paint *where*, a second image supplies *what*.
+
+> **Dependency for the two FLUX.2 graphs only** (the Moebius nodes need none of this): they use the `InpaintCropImproved` / `InpaintStitchImproved` nodes from the **[ComfyUI-Inpaint-CropAndStitch](https://github.com/lquesada/ComfyUI-Inpaint-CropAndStitch)** pack by lquesada — install it via **ComfyUI-Manager** (search "Inpaint-CropAndStitch") or clone it into `custom_nodes/`:
+> ```bash
+> cd ComfyUI/custom_nodes
+> git clone https://github.com/lquesada/ComfyUI-Inpaint-CropAndStitch.git
+> ```
+> They also need the FLUX.2 Klein 9B models (diffusion model, Qwen3 text encoder, VAE) — the exact files and download locations are listed in each graph's on-canvas note panel.
 
 ## Parameter guide
 
