@@ -18,8 +18,17 @@ Copied from https://github.com/hustvl/Moebius @ `390735d867e6a7b337abad23af7f2e9
 - **Dropped**: teacher model (`unet_gla.py`, `layers/gla/`), EMA loading, training code, migan hooks, matplotlib latent visualization, `accelerate` import in `utils_infer.py` (was type-hint-only), `tqdm` (replaced by a step callback).
 - **Renamed**: `layers/λ/vanillaλ.py` → `layers/lam/vanilla_lambda.py` (a literal `λ` path breaks some Windows/zip/packaging setups; imports patched).
 - **Removed global side effects**: upstream set `torch._dynamo.config.suppress_errors = True` at import in two files — removed (it would silently change dynamo behavior for the whole ComfyUI process).
+- **Silenced per-load debug prints** (`_init_continuous_input` in mix_transformer.py, block-type print in unet_lambda_prune_lite.py) — they fired ~18× on every model load.
+- **`torch.meshgrid(..., indexing='ij')`** in layers/utils.py + vanilla_lambda.py — behavior-identical ('ij' is the legacy default), silences torch's deprecation warning.
 - **`removal_model.py` rewritten**: upstream `build_removal_model` used `from model_lib import *` + `eval(model_type)`; ours imports the one student class explicitly and takes the config as a dict (no eval).
 - **`pipeline.py` adapted** (`MoebiusPipeline`, single-batch): same math/order as upstream `RemovalSDXLPipeline_BatchMode` (mask binarize at 0.5 → resize-to-64-multiple LANCZOS → VAE encode ×2 → DDIM loop over 9-ch concat [noisy(4), mask(1), masked(4)] with CFG → decode → paste/compensate). Added: `step_callback(step, total)` (drives `comfy.utils.ProgressBar` + interrupt via raising in the callback), explicit `seed` param (upstream seeded globals with `retry`; its CLI `--seed` was dead code).
+
+## Verified on rig (2026-07-02, RTX 5090 / torch 2.9.1+cu128 / diffusers 0.35.1)
+
+- Standalone pipeline test PASS: checkpoint loads strict (`<All keys matched successfully>`, 226.0M params), 20-step 512×512 inpaint **0.73 s warm** (1.4 s cold incl. VAE), same-seed rerun **bit-identical**.
+- **Mask polarity CONFIRMED empirically**: pipeline inpaints white(1.0)/keeps black — measured masked-region mean diff 23.4 vs kept-region 0.5 on the upstream sample. ComfyUI MASK (1.0 = edit) maps directly, **no inversion anywhere**.
+- Node-level test PASS (headless, real `nodes.py` classes): loader dropdown, IMAGE/MASK conversion, node-side full-res paste (pixels >10 px from mask **100% bit-identical**, boundary blend ≤0.29 from the radius-3 Gaussian), empty-mask passthrough.
+- **★ hf gotcha**: `hf_hub_download(local_dir=...)` creates `.cache/huggingface/` bookkeeping inside `models/moebius/` which leaked into `folder_paths.get_filename_list` — `_model_choices()` in nodes.py filters dot-dirs + non-checkpoint extensions. Keep that filter.
 
 ## Parity notes (for comparing against upstream CLI)
 

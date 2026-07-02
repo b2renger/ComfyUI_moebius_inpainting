@@ -62,14 +62,14 @@ README.md / CLAUDE.md / implementation_plan.md / LICENSE / NOTICE
 - [x] Phase 0 — source audit (findings above)
 - [x] Phase 1 — repo scaffold + docs (this commit)
 - [x] Phase 2 — vendor `moebius_src/` (import fixes, λ→lam rename, dynamo-side-effect strip, pipeline adaptation w/ step callback + seed param) — import + random-init build verified on the rig's embedded python (226.0M params, diffusers 0.35.1)
-- [ ] Phase 3 — `download.py` + `conversions.py`
-- [ ] Phase 4 — `nodes.py` + `__init__.py` + packaging (`requirements.txt`, `pyproject.toml`)
-- [ ] Phase 5 — example workflow JSON + `test_moebius.py`
-- [ ] Phase 6 — smoke test on rig (RTX 5090)
+- [x] Phase 3 — `download.py` + `conversions.py`
+- [x] Phase 4 — `nodes.py` + `__init__.py` + packaging; node defs verified under ComfyUI's module loader (gotcha found+fixed: hf's `.cache/` bookkeeping leaked into the model dropdown)
+- [x] Phase 5 — example workflow JSON + `test_moebius.py`
+- [x] Phase 6 — smoke tests on rig (RTX 5090): pipeline PASS (strict weight load, 0.73 s/20 steps warm, bit-identical reruns) + headless node-class PASS (conversions, full-res paste 100% identical >10 px from mask, empty-mask passthrough). **Mask polarity confirmed: white/1.0 = inpaint, no inversion.**
 - [ ] Phase 7 — in-ComfyUI graph test (owner) → publish
 
 ## Verification
 
 1. **Standalone smoke test** (rig, embedded python): `python_embeded\python.exe custom_nodes\ComfyUI_moebius_inpainting\test_moebius.py` — downloads weights if absent, inpaints a sample image+mask from the upstream repo's `data/`, writes `_test_out/*.png`. Run with a fixed seed twice → identical outputs.
-2. **Parity vs upstream** (optional, needs upstream clone + its deps): same image/mask/seed/steps/cfg through `python -m infer.infer_moebius` and through our pipeline → outputs should match.
+2. **Parity vs upstream**: established by code identity (the denoise math is vendored verbatim) + the empirical checks above; a CLI A/B was skipped because upstream's `infer` entry pulls training-only deps (accelerate/utils_train).
 3. **In ComfyUI**: restart, build `LoadImage(+mask) → MoebiusModelLoader → MoebiusInpaint → SaveImage` (or drag the example workflow). Confirm: masked region inpainted (polarity!), ProgressBar advances, Cancel interrupts, `(download)` entry fetches on first use, startup not slowed.

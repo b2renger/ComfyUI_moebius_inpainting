@@ -70,11 +70,11 @@ Progress log (kept up to date — see [implementation_plan.md](implementation_pl
 - [x] 2026-07-02 — Upstream source audited: student UNet confirmed pure PyTorch (no `fla` dependency); inference path mapped (`RemovalSDXLPipeline_BatchMode`); HF weight layouts verified.
 - [x] 2026-07-02 — Repo scaffold + docs.
 - [x] 2026-07-02 — Vendored minimal inference subset under `moebius_src/` (Apache-2.0, see NOTICE); imports + model construction verified against diffusers 0.35.1 (226.0M params).
-- [ ] `download.py` (HF fetch) + `conversions.py` (IMAGE/MASK ↔ PIL glue).
-- [ ] Nodes (`MoebiusModelLoader`, `MoebiusInpaint`) + packaging.
-- [ ] Example workflow JSON.
-- [ ] Standalone smoke test on the rig (RTX 5090, torch 2.9.1+cu128).
-- [ ] In-ComfyUI graph test (loader → inpaint → save).
+- [x] 2026-07-02 — `download.py` (HF fetch, both checkpoints + shared VAE) + `conversions.py` (IMAGE/MASK ↔ PIL glue).
+- [x] 2026-07-02 — Nodes (`MoebiusModelLoader`, `MoebiusInpaint`) + packaging; node defs verified under ComfyUI's module loader.
+- [x] 2026-07-02 — Example workflow JSON.
+- [x] 2026-07-02 — Smoke tests green on RTX 5090 (Blackwell, torch 2.9.1+cu128): weights auto-download; checkpoint loads strict; 20-step 512×512 inpaint in **0.73 s** warm; same-seed rerun bit-identical; **mask polarity confirmed** (ComfyUI 1.0 = inpaint, no inversion); with `paste`, pixels >10 px from the mask are 100% bit-identical to the input; empty mask returns the input unchanged.
+- [ ] In-ComfyUI graph test (loader → inpaint → save) — **pending a user test**: restart ComfyUI, drag in the example workflow, paint a mask, Queue.
 
 ## License
 
