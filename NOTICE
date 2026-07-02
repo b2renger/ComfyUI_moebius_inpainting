@@ -1,0 +1,17 @@
+ComfyUI Moebius Inpainting
+Copyright 2026 b2renger
+
+This product includes software developed by the HUST Vision Lab (hustvl):
+
+  Moebius — https://github.com/hustvl/Moebius
+  Copyright (c) hustvl
+  Licensed under the Apache License, Version 2.0
+
+The directory `moebius_src/` contains a modified subset of the Moebius
+repository (upstream commit 390735d867e6a7b337abad23af7f2e95eb8d5e63),
+reduced to the student-model inference path. Modifications are documented
+in CLAUDE.md ("Vendored code provenance").
+
+Model weights are distributed separately by their authors:
+  - https://huggingface.co/hustvl/Moebius (MIT)
+  - https://huggingface.co/hustvl/PixelHacker (VAE)
