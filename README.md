@@ -20,13 +20,16 @@ Where a promptable model (FLUX-class) feeds a text encoder's output into cross-a
 - **Prompt-guided inpainting** ("replace the car with a fountain") — Moebius has no text encoder at all; there is nothing to feed a prompt into.
 - **Reference-guided inpainting** (insert the object/style from a second image) — the UNet has no image-conditioning input besides the masked source itself.
 
-For those two jobs use a *generalist fill/edit model* — bigger and slower, but promptable. This repo ships ready-made companion graphs built on **FLUX.2 Klein 9B** (see the example workflows below), so the folder covers the full spectrum:
+For those two jobs use a *generalist fill/edit model* — bigger and slower, but promptable. This repo ships ready-made graphs built on **FLUX.2 Klein 9B** so the folder covers the full spectrum. Note the FLUX graphs are **their own pipelines** — most are *alternatives* to Moebius, run one or the other; the exception is the "replace" graph, which genuinely uses **both** nodes (Moebius cleans, FLUX fills):
 
-| You want to… | Use |
-|---|---|
-| remove something | **Moebius** (fastest, ~1 GB) |
-| replace it with something *described in text* | `flux2_klein_inpaint_prompt_example` |
-| replace it with something *from another photo* | `flux2_klein_inpaint_reference_example` |
+| You want to… | Use | Moebius node? |
+|---|---|---|
+| **remove** something (fill with background) | **Moebius** — fastest, ~1 GB | ✅ only Moebius |
+| **add** something to empty/background space, *described* | `flux2_klein_inpaint_prompt_example` | ❌ FLUX-only alternative |
+| **add** something from *another photo* | `flux2_klein_inpaint_reference_example` | ❌ FLUX-only alternative |
+| **replace** an existing object with a *described* one | `moebius_then_flux2_replace_example` | ✅ **both** — Moebius removes → FLUX fills |
+
+Why the last row chains them: FLUX's `ReferenceLatent` feeds the whole source image (the object you want gone included) back as edit context, so at low step counts it can "echo" the old object. Removing it with Moebius first gives FLUX a clean plate to generate on. For plain *add-to-empty-space* that pre-pass is unnecessary — use the standalone FLUX graphs.
 
 ## Nodes
 
@@ -88,22 +91,28 @@ GPU support is therefore exactly your torch build's support:
 
 ## Example workflows
 
-Drag a JSON from [`example_workflows/`](example_workflows/) onto the ComfyUI canvas. Both graphs carry note panels explaining the pipeline, the checkpoints and every parameter:
+Drag a JSON from [`example_workflows/`](example_workflows/) onto the ComfyUI canvas. Every graph carries on-canvas note panels explaining the pipeline, the checkpoints and every parameter.
+
+**Moebius-only** (removal — no extra dependencies):
 
 - [`moebius_inpaint_example.json`](example_workflows/moebius_inpaint_example.json) — **general object removal** (`pretrained`): `LoadImage` (paint the mask in the MaskEditor) → `Moebius Model Loader` → `Moebius Inpaint` → `SaveImage`.
 - [`moebius_face_inpaint_example.json`](example_workflows/moebius_face_inpaint_example.json) — **face / portrait retouching** (`ft_ffhq`, mask_dilate 4): remove glasses, hands, occlusions from face close-ups.
 
-Two **companion graphs** cover what Moebius architecturally can't (they use core ComfyUI nodes + FLUX.2 Klein 9B, not the Moebius nodes):
+A **combined graph** uses both nodes — the only one where FLUX and Moebius work together:
 
-- [`flux2_klein_inpaint_prompt_example.json`](example_workflows/flux2_klein_inpaint_prompt_example.json) — **inpainting with a text prompt**: paint the mask, describe what should appear there.
-- [`flux2_klein_inpaint_reference_example.json`](example_workflows/flux2_klein_inpaint_reference_example.json) — **inpainting with a reference image**: paint *where*, a second image supplies *what*.
+- [`moebius_then_flux2_replace_example.json`](example_workflows/moebius_then_flux2_replace_example.json) — **replace an existing object**: paint it once → `Moebius Inpaint` erases it to a clean plate → FLUX.2 fills the region from your prompt (fed the *cleaned* image as context, so no ghosting of the old object).
 
-> **Dependency for the two FLUX.2 graphs only** (the Moebius nodes need none of this): they use the `InpaintCropImproved` / `InpaintStitchImproved` nodes from the **[ComfyUI-Inpaint-CropAndStitch](https://github.com/lquesada/ComfyUI-Inpaint-CropAndStitch)** pack by lquesada — install it via **ComfyUI-Manager** (search "Inpaint-CropAndStitch") or clone it into `custom_nodes/`:
+Two **standalone FLUX.2 graphs** are *alternatives* to Moebius (they contain **no Moebius node** — use them instead of Moebius, not with it):
+
+- [`flux2_klein_inpaint_prompt_example.json`](example_workflows/flux2_klein_inpaint_prompt_example.json) — **add with a text prompt**: paint a region, describe what should appear there.
+- [`flux2_klein_inpaint_reference_example.json`](example_workflows/flux2_klein_inpaint_reference_example.json) — **add from a reference image**: paint *where*, a second image supplies *what*.
+
+> **Dependencies for the FLUX.2 graphs only** (the two Moebius-only graphs need none of this): all three FLUX graphs use the `InpaintCropImproved` / `InpaintStitchImproved` nodes from the **[ComfyUI-Inpaint-CropAndStitch](https://github.com/lquesada/ComfyUI-Inpaint-CropAndStitch)** pack by lquesada — install via **ComfyUI-Manager** (search "Inpaint-CropAndStitch") or clone into `custom_nodes/`:
 > ```bash
 > cd ComfyUI/custom_nodes
 > git clone https://github.com/lquesada/ComfyUI-Inpaint-CropAndStitch.git
 > ```
-> They also need the FLUX.2 Klein 9B models (diffusion model, Qwen3 text encoder, VAE) — the exact files and download locations are listed in each graph's on-canvas note panel.
+> They also need the FLUX.2 Klein 9B models (diffusion model, Qwen3 text encoder, VAE) — exact files and download locations are in each graph's on-canvas note panel.
 
 ## Parameter guide
 
@@ -124,9 +133,9 @@ Progress log (kept up to date — see [implementation_plan.md](implementation_pl
 - [x] 2026-07-02 — Vendored minimal inference subset under `moebius_src/` (Apache-2.0, see NOTICE); imports + model construction verified against diffusers 0.35.1 (226.0M params).
 - [x] 2026-07-02 — `download.py` (HF fetch, both checkpoints + shared VAE) + `conversions.py` (IMAGE/MASK ↔ PIL glue).
 - [x] 2026-07-02 — Nodes (`MoebiusModelLoader`, `MoebiusInpaint`) + packaging; node defs verified under ComfyUI's module loader.
-- [x] 2026-07-02 — Example workflow JSON; later expanded to two annotated examples (general removal + `ft_ffhq` face retouch) with in-graph note panels, plus the checkpoint guide and capabilities section in this README.
+- [x] 2026-07-02 — Example workflows (5 total): 2 Moebius-only (general removal + `ft_ffhq` face retouch), 1 combined `moebius_then_flux2_replace` (Moebius clean-plate → FLUX.2 fill), 2 standalone FLUX.2 alternatives (prompt / reference). All carry in-graph note panels; all pass link-consistency validation. README gained the how-it-works, checkpoint guide, capabilities, and remove/add/replace decision table.
 - [x] 2026-07-02 — Smoke tests green on RTX 5090 (Blackwell, torch 2.9.1+cu128): weights auto-download; checkpoint loads strict; 20-step 512×512 inpaint in **0.73 s** warm; same-seed rerun bit-identical; **mask polarity confirmed** (ComfyUI 1.0 = inpaint, no inversion); with `paste`, pixels >10 px from the mask are 100% bit-identical to the input; empty mask returns the input unchanged.
-- [ ] In-ComfyUI graph test (loader → inpaint → save) — **pending a user test**: restart ComfyUI, drag in the example workflow, paint a mask, Queue.
+- [ ] In-ComfyUI graph test — **pending a user test**: (a) the Moebius-only graphs (loader → inpaint → save); (b) the combined + standalone FLUX graphs (need the CropAndStitch pack + FLUX.2 models, all present on the AN-5090-2 rig).
 
 ## License
 

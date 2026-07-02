@@ -43,6 +43,17 @@ Copied from https://github.com/hustvl/Moebius @ `390735d867e6a7b337abad23af7f2e9
 - Standalone smoke test: `python_embeded\python.exe custom_nodes\ComfyUI_moebius_inpainting\test_moebius.py` (auto-downloads weights on first run; writes PNGs into the repo's `_test_out/`, gitignored). Run it after any change to `moebius_src/` or the pipeline glue. Remember the J: copy tests what's PUSHED - push from D: and pull on J: first.
 - diffusers compatibility: vendored code imports `diffusers.models.unets.unet_2d_condition`, `.unet_2d_blocks (get_down_block/get_mid_block/get_up_block)`, `transformer_2d`, `AdaGroupNorm`, etc. Verified against diffusers **0.35.1**; upstream targeted 0.38. If a future diffusers moves these, pin `<` the breaking version in requirements.txt.
 
+## Example workflows (design decision, 2026-07-02)
+
+Five graphs in `example_workflows/`. Moebius and FLUX-inpaint are **sibling tools for different jobs**, chosen per-task, NOT a forced pipeline — the owner flagged that shipping FLUX-only graphs in a Moebius repo implied a false pipeline. Resolution:
+- **Moebius-only**: `moebius_inpaint_example` (general removal), `moebius_face_inpaint_example` (ft_ffhq, mask_dilate 4). No extra deps.
+- **Combined (both nodes)**: `moebius_then_flux2_replace_example` — the ONE graph that legitimately uses both. Moebius erases the object to a clean plate; the cleaned IMAGE feeds FLUX's InpaintCrop **and** (via VAEEncode) the ReferenceLatent context. The SAME painted mask drives both stages. Rationale: FLUX ReferenceLatent replays the whole source image (old object included) as edit context, which `echoes` the object at the 4-step distilled setting; a Moebius clean-plate removes that echo. Genuinely better than FLUX-alone for REPLACE (not for ADD-to-empty-space).
+- **Standalone FLUX alternatives** (no Moebius node): `flux2_klein_inpaint_prompt_example` (add by text), `flux2_klein_inpaint_reference_example` (add by reference). Note panels relabeled "STANDALONE - does NOT use the Moebius node".
+
+Decision matrix: remove -> Moebius; add-to-empty (text/photo) -> standalone FLUX; replace-existing -> combined graph.
+
+The three FLUX graphs need the **ComfyUI-Inpaint-CropAndStitch** pack (lquesada) + FLUX.2 Klein 9B models (flux-2-klein-9b-fp8 / qwen_3_8b_fp8mixed / flux2-vae) — all present on the AN-5090-2 rig (diffusion_models/, text_encoders/, vae/). FLUX graphs are hand-authored UI-format (litegraph) JSON mirroring ComfyQ's rig-proven `image_flux2_inpaint*` api.json; validated by a link-consistency check (every link defined once, consumed once, produced once, endpoints match) but NOT yet run end-to-end in the GUI - that's the owner's pending test.
+
 ## Conventions
 
 - Heavy imports (`moebius_src`, diffusers) stay **out of module import time** — `nodes.py` imports them inside the node functions so ComfyUI startup isn't slowed and a broken dep doesn't kill node registration.
