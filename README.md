@@ -4,6 +4,14 @@ ComfyUI custom nodes for **[Moebius](https://github.com/hustvl/Moebius)** (hustv
 
 Moebius is **mask-driven object removal / inpainting**. There is **no text prompt** — conditioning comes from a fixed learned embedding table inside the model. You give it an image and a mask; it fills the masked region.
 
+## How it works (and why there is no prompt)
+
+Moebius is a latent diffusion model, and it **is generative** — it invents brand-new pixels in the hole (change the seed and the fill changes). What it lacks is a *language* channel to tell it **what** to invent; instead, the surrounding image is the instruction.
+
+At every denoising step the UNet sees three things stacked together (9 latent channels): the current **noisy latent** of the whole image, your **mask**, and the latent of the image **with the hole blanked out** (the context). Starting from pure noise inside the mask, ~20 denoising steps pull that region toward "whatever is statistically plausible given the surrounding pixels" — continuing textures, edges, lighting, geometry, even face structure. It learned that prior from millions of (image, random mask) pairs, distilled from the 10B-parameter PixelHacker teacher: the 0.22B student is trained to match the teacher's denoising predictions, which is how it keeps 10B-class quality at one narrow job.
+
+Where a promptable model (FLUX-class) feeds a text encoder's output into cross-attention, Moebius replaces that entire subsystem with **20 fixed embedding vectors learned during training** (10 "do the task" + 10 "unconditional" for classifier-free guidance — the `guidance` knob interpolates between them). Think of it as a task instruction permanently baked into the weights, always meaning *"continue this scene naturally"*. There is simply no input where a prompt or a reference image could enter — which is precisely the trade that makes it 50× smaller and >15× faster than a generalist.
+
 ## What Moebius can and can't do
 
 **Can:** remove anything you mask — objects, people, text/watermarks, blemishes, occlusions — and refill the hole with a plausible continuation of the surroundings, in well under a second. That single skill is the whole model, which is why 0.22B matches 10B-class generalists at it.
@@ -12,7 +20,13 @@ Moebius is **mask-driven object removal / inpainting**. There is **no text promp
 - **Prompt-guided inpainting** ("replace the car with a fountain") — Moebius has no text encoder at all; there is nothing to feed a prompt into.
 - **Reference-guided inpainting** (insert the object/style from a second image) — the UNet has no image-conditioning input besides the masked source itself.
 
-For those two jobs use a *generalist fill/edit model* (e.g. FLUX.1-Fill or a FLUX.2 Klein inpaint graph) — bigger and slower, but promptable. A good pattern is to combine them: Moebius for fast, seamless *removal*, the big model only when you need to *put something specific* in the hole.
+For those two jobs use a *generalist fill/edit model* — bigger and slower, but promptable. This repo ships ready-made companion graphs built on **FLUX.2 Klein 9B** (see the example workflows below), so the folder covers the full spectrum:
+
+| You want to… | Use |
+|---|---|
+| remove something | **Moebius** (fastest, ~1 GB) |
+| replace it with something *described in text* | `flux2_klein_inpaint_prompt_example` |
+| replace it with something *from another photo* | `flux2_klein_inpaint_reference_example` |
 
 ## Nodes
 
@@ -78,6 +92,11 @@ Drag a JSON from [`example_workflows/`](example_workflows/) onto the ComfyUI can
 
 - [`moebius_inpaint_example.json`](example_workflows/moebius_inpaint_example.json) — **general object removal** (`pretrained`): `LoadImage` (paint the mask in the MaskEditor) → `Moebius Model Loader` → `Moebius Inpaint` → `SaveImage`.
 - [`moebius_face_inpaint_example.json`](example_workflows/moebius_face_inpaint_example.json) — **face / portrait retouching** (`ft_ffhq`, mask_dilate 4): remove glasses, hands, occlusions from face close-ups.
+
+Two **companion graphs** cover what Moebius architecturally can't (they use core ComfyUI nodes + FLUX.2 Klein 9B, not the Moebius nodes — models listed in each graph's note panel, plus the `comfyui-inpaint-cropandstitch` pack from the Manager):
+
+- [`flux2_klein_inpaint_prompt_example.json`](example_workflows/flux2_klein_inpaint_prompt_example.json) — **inpainting with a text prompt**: paint the mask, describe what should appear there.
+- [`flux2_klein_inpaint_reference_example.json`](example_workflows/flux2_klein_inpaint_reference_example.json) — **inpainting with a reference image**: paint *where*, a second image supplies *what*.
 
 ## Parameter guide
 
