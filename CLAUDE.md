@@ -47,5 +47,5 @@ Copied from https://github.com/hustvl/Moebius @ `390735d867e6a7b337abad23af7f2e9
 
 - Heavy imports (`moebius_src`, diffusers) stay **out of module import time** — `nodes.py` imports them inside the node functions so ComfyUI startup isn't slowed and a broken dep doesn't kill node registration.
 - Commit style: conventional prefixes (`docs:`, `vendor:`, `feat:`, `fix:`, `test:`), one logical unit per commit, keep the tree linear and human-readable.
-- Commit/push only when the owner asks (push target repo not created yet).
+- Commit at every logical unit; push to origin (github.com/b2renger/ComfyUI_moebius_inpainting) when a phase lands, per the owner's standing instruction.
 - Docs discipline: every feature/fix updates README "Development status" + implementation_plan.md checkboxes in the same commit.
